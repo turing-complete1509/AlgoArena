@@ -7,7 +7,7 @@ dotenv.config();
 
 const seedDB = async () => {
     try {
-        await mongoose.connect(process.env.mongoURI || 'mongodb://localhost:27017/algoarena');
+        await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/algoarena');
         console.log('MongoDB Connected for Seeding');
 
         await Problem.deleteMany();

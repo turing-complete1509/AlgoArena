@@ -1,0 +1,116 @@
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    color: #f3f4f6;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.dashboard-header {
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.dashboard-header h1 {
+    font-size: 3rem;
+    background: linear-gradient(to right, #a855f7, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+}
+
+.dashboard-header p {
+    color: #9ca3af;
+    font-size: 1.1rem;
+}
+
+.table-wrapper {
+    background: rgba(31, 41, 55, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.problems-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.problems-table th {
+    background: rgba(17, 24, 39, 0.8);
+    padding: 16px 24px;
+    font-weight: 600;
+    color: #d1d5db;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.problems-table td {
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.problem-row {
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.problem-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.title-cell {
+    font-weight: 500;
+    color: #f9fafb;
+}
+
+/* Difficulty Badges */
+.difficulty-badge {
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.difficulty-badge.easy {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.difficulty-badge.medium {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.difficulty-badge.hard {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* Tags */
+.tags-cell {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tag {
+    background: rgba(55, 65, 81, 0.6);
+    color: #d1d5db;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+.loader {
+    text-align: center;
+    font-size: 1.5rem;
+    color: #a855f7;
+    margin-top: 100px;
+}
