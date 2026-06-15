@@ -1,0 +1,24 @@
+import mongoose from 'mongoose';
+
+const SubmissionSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    problemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Problem', required: true },
+    language: { type: String, required: true },
+    sourceCode: { type: String, required: true },
+    status: { 
+        type: String, 
+        enum: ['Queued', 'Running', 'Accepted', 'WA', 'TLE', 'MLE', 'RE', 'CE', 'Internal Error'],
+        default: 'Queued'
+    },
+    metrics: {
+        executionTimeMs: { type: Number, default: 0 },
+        memoryUsedKb: { type: Number, default: 0 },
+        testCasesPassed: { type: Number, default: 0 }
+    },
+    submittedAt: { type: Date, default: Date.now }
+});
+
+SubmissionSchema.index({ userId: 1, problemId: 1 });
+SubmissionSchema.index({ submittedAt: -1 });
+
+export default mongoose.model('Submission', SubmissionSchema);
