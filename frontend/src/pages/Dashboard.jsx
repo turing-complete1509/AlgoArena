@@ -1,10 +1,13 @@
-import {useState, useEffect} from 'react';
-import {fetchProblems} from '../services/api.js';
+import { useState, useEffect } from 'react';
+import {useNavigate} from 'react-router-dom';
+import { fetchProblems } from '../services/api.js';
 import './Dashboard.css';
 
 const Dashboard = () => {
     const [problems, setProblems] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         const loadProblems = async () => {
@@ -20,7 +23,7 @@ const Dashboard = () => {
         loadProblems();
     }, []);
 
-    if(loading){
+    if (loading) {
         return (
             <div className="loader">
                 Loading Arena...
@@ -48,7 +51,7 @@ const Dashboard = () => {
 
                     <tbody>
                         {problems.map((prob) => (
-                            <tr key={prob._id} className='problem-row'>
+                            <tr key={prob._id} className='problem-row' onClick={() => navigate(`/problem/${prob._id}`)}>
                                 <td className='status-cell'> ➖ </td>
 
                                 <td className='title-cell'>{prob.title}</td>
