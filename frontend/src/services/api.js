@@ -59,3 +59,26 @@ export const fetchProblemById = async (id) => {
         throw error;
     }
 };
+
+//SUBMIT CODE
+
+export const submitCode = async (problemId, language, code) => {
+    // In a real app with Auth Context, we would attach the Bearer token here
+    const response = await fetch(`${API_BASE_URL}/submissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problemId, language, code })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Submission failed');
+    return data;
+};
+
+//GET SUBMISSION STATUS
+
+export const getSubmission = async (submissionId) => {
+    const response = await fetch(`${API_BASE_URL}/submissions/${submissionId}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to fetch submission');
+    return data;
+};

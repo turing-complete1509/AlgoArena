@@ -44,3 +44,19 @@ export const createSubmission = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+// @desc    Get submission by ID
+// @route   GET /api/submissions/:id
+export const getSubmissionById = async (req, res) => {
+    try {
+        const submission = await Submission.findById(req.params.id);
+        if (!submission) {
+            return res.status(404).json({ message: 'Submission not found' });
+        }
+        res.json(submission);
+    } catch (error) {
+        console.error('Error fetching submission:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+

@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Split from 'react-split';
 import Editor from '@monaco-editor/react';
-import { fetchProblemById } from '../services/api';
 import './Workspace.css';
+import { fetchProblemById, submitCode, getSubmission } from '../services/api';
+
 
 const Workspace = () => {
     const { id } = useParams();
     const [problem, setProblem] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [code, setCode] = useState('// Write your solution here...\n');
+    const [code, setCode] = useState('// Write your code here...\nfunction twoSum(nums, target) {\n\n}');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionResult, setSubmissionResult] = useState(null)
 
     useEffect(() => {
         const loadProblem = async () => {
@@ -33,6 +36,34 @@ const Workspace = () => {
         alert("Code execution coming soon!");
     };
 
+    const handleSubmit = async () => {
+        if (!code.trim()) return;
+        setIsSubmitting(true);
+        setSubmissionResult({ status: 'Pending', message: 'Sending to queue...' });
+
+        try {
+            // 1. Submit code to the queue
+            const { submissionId } = await submitCode(id, 'javascript', code);
+            
+            // 2. Poll the database every 1.5 seconds until done
+            const pollInterval = setInterval(async () => {
+                const sub = await getSubmission(submissionId);
+                setSubmissionResult({ status: sub.status });
+                
+                // If the status is no longer Pending or Processing, stop polling!
+                if (sub.status !== 'Pending' && sub.status !== 'Processing') {
+                    clearInterval(pollInterval);
+                    setIsSubmitting(false);
+                }
+            }, 1500);
+
+        } catch (error) {
+            setSubmissionResult({ status: 'Error', message: error.message });
+            setIsSubmitting(false);
+        }
+    };
+
+
     return (
         <div className="workspace-container">
             {/* Navbar specifically for the workspace */}
@@ -40,7 +71,7 @@ const Workspace = () => {
                 <Link to="/" className="back-link">⬅ Back to Dashboard</Link>
                 <div className="nav-actions">
                     <button className="run-btn" onClick={handleRunCode}>Run Code</button>
-                    <button className="submit-btn" onClick={handleRunCode}>Submit</button>
+                    <button className="submit-btn" onClick={handleSubmit} disabled={isSubmitting}> {isSubmitting ? 'Running...' : 'Submit'} </button>
                 </div>
             </nav>
 
@@ -89,6 +120,11 @@ const Workspace = () => {
                         <div className="console-header">Console</div>
                         <div className="console-output">
                             Ready to run tests...
+                            {submissionResult && (
+                                <div className={`submission-result ${submissionResult.status.toLowerCase().replace(' ', '-')}`}>
+                                    <h3>Verdict: {submissionResult.status}</h3>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

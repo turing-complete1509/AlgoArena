@@ -4,11 +4,11 @@ const SubmissionSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     problemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Problem', required: true },
     language: { type: String, required: true },
-    sourceCode: { type: String, required: true },
+    code: { type: String, required: true },
     status: { 
         type: String, 
-        enum: ['Queued', 'Running', 'Accepted', 'WA', 'TLE', 'MLE', 'RE', 'CE', 'Internal Error'],
-        default: 'Queued'
+        enum: ['Pending', 'Processing', 'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Runtime Error', 'Internal Error'],
+        default: 'Pending'
     },
     metrics: {
         executionTimeMs: { type: Number, default: 0 },
