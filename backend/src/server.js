@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import {connectDB} from './config/db.js';
 import problemRoutes from './routes/problemRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import submissionRoutes from './routes/submissionRoutes.js';
 
 dotenv.config();
 
@@ -18,6 +19,8 @@ app.use(express.json());
 app.use('/api/problems', problemRoutes);
 
 app.use('/api/auth', authRoutes);
+
+app.use('/api/submissions', submissionRoutes);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'AlgoArena API is running smoothly' });
