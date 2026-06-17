@@ -4,6 +4,7 @@ import { exec } from 'child_process';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Submission from './src/models/Submission.js';
+import CustomSubmission from './src/models/CustomSubmission.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -73,20 +74,21 @@ const runDockerTest = (language, filename, input) => {
 
 // The actual worker that listens to the queue
 const worker = new Worker('code-execution', async (job) => {
-    const { submissionId, code, testCases } = job.data;
-    console.log(`Processing submission: ${submissionId}`);
+    const { submissionId, code, testCases, isCustom, language, customInput } = job.data;
+    console.log(`Processing ${isCustom ? 'custom ' : ''}submission: ${submissionId}`);
 
-    const submission = await Submission.findById(submissionId);
+    const Model = isCustom ? CustomSubmission : Submission;
+    const submission = await Model.findById(submissionId);
     if (!submission) return;
 
     // Update status to processing
-    await Submission.findByIdAndUpdate(submissionId, { status: 'Processing' });
+    await Model.findByIdAndUpdate(submissionId, { status: 'Processing' });
 
-    const language = submission.language;
+    const lang = isCustom ? language : submission.language;
     let ext = '';
-    if (language === 'javascript') ext = 'js';
-    else if (language === 'python') ext = 'py';
-    else if (language === 'cpp') ext = 'cpp';
+    if (lang === 'javascript') ext = 'js';
+    else if (lang === 'python') ext = 'py';
+    else if (lang === 'cpp') ext = 'cpp';
 
     const jobIdStr = crypto.randomUUID();
     const filename = `main_${jobIdStr}.${ext}`;
@@ -95,35 +97,46 @@ const worker = new Worker('code-execution', async (job) => {
     try {
         await fs.writeFile(filePath, code);
 
-        let finalStatus = 'Accepted';
+        if (isCustom) {
+            const formattedInput = customInput ? customInput.replace(/\\n/g, '\n') : '';
+            const result = await runDockerTest(lang, filename, formattedInput);
+            
+            await Model.findByIdAndUpdate(submissionId, { 
+                status: result.status === 'Success' ? 'Completed' : result.status,
+                output: result.output 
+            });
+            console.log(`Custom submission ${submissionId} finished with status: ${result.status}`);
+        } else {
+            let finalStatus = 'Accepted';
 
-        for (let i = 0; i < testCases.length; i++) {
-            const tc = testCases[i];
+            for (let i = 0; i < testCases.length; i++) {
+                const tc = testCases[i];
 
-            // Format input carefully
-            const formattedInput = tc.input.replace(/\\n/g, '\n');
-            const expectedOutput = tc.expectedOutput.replace(/\\n/g, '\n').trim();
+                // Format input carefully
+                const formattedInput = tc.input.replace(/\\n/g, '\n');
+                const expectedOutput = tc.expectedOutput.replace(/\\n/g, '\n').trim();
 
-            const result = await runDockerTest(language, filename, formattedInput);
+                const result = await runDockerTest(lang, filename, formattedInput);
 
-            if (result.status !== 'Success') {
-                finalStatus = result.status;
-                break;
+                if (result.status !== 'Success') {
+                    finalStatus = result.status;
+                    break;
+                }
+
+                if (result.output !== expectedOutput) {
+                    console.log(`Mismatch on TC ${i}. Expected: ${expectedOutput}, Got: ${result.output}`);
+                    finalStatus = 'Wrong Answer';
+                    break;
+                }
             }
 
-            if (result.output !== expectedOutput) {
-                console.log(`Mismatch on TC ${i}. Expected: ${expectedOutput}, Got: ${result.output}`);
-                finalStatus = 'Wrong Answer';
-                break;
-            }
+            await Model.findByIdAndUpdate(submissionId, { status: finalStatus });
+            console.log(`Submission ${submissionId} finished with status: ${finalStatus}`);
         }
-
-        await Submission.findByIdAndUpdate(submissionId, { status: finalStatus });
-        console.log(`Submission ${submissionId} finished with status: ${finalStatus}`);
 
     } catch (e) {
         console.error("Worker error:", e);
-        await Submission.findByIdAndUpdate(submissionId, { status: 'Internal Error' });
+        await Model.findByIdAndUpdate(submissionId, { status: 'Internal Error' });
     } finally {
         // Clean up the temp file
         try {

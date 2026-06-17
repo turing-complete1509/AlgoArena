@@ -83,3 +83,54 @@ export const getMySubmissions = async (req, res) => {
     }
 }
 
+import CustomSubmission from '../models/CustomSubmission.js';
+
+// @desc    Submit custom code for evaluation
+// @route   POST /api/submissions/custom
+export const createCustomSubmission = async (req, res) => {
+    try {
+        const { problemId, code, language, customInput } = req.body;
+        const userId = req.user._id;
+
+        const submission = await CustomSubmission.create({
+            userId,
+            problemId,
+            code,
+            language,
+            customInput,
+            status: 'Pending'
+        });
+
+        await executionQueue.add('execute-code', {
+            submissionId: submission._id,
+            code,
+            language,
+            customInput,
+            isCustom: true
+        });
+
+        res.status(201).json({
+            message: 'Custom submission received',
+            submissionId: submission._id
+        });
+    } catch (error) {
+        console.error('Custom submission error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get custom submission by ID
+// @route   GET /api/submissions/custom/:id
+export const getCustomSubmissionById = async (req, res) => {
+    try {
+        const submission = await CustomSubmission.findById(req.params.id);
+        if (!submission) {
+            return res.status(404).json({ message: 'Custom submission not found' });
+        }
+        res.json(submission);
+    } catch (error) {
+        console.error('Error fetching custom submission:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+

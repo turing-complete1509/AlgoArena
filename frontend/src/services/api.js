@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5000/api';
 
 //LOGIN
 
@@ -84,6 +84,26 @@ export const submitCode = async (problemId, language, code) => {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Submission failed');
+    return data;
+};
+
+export const submitCustomCode = async (problemId, code, language, customInput) => {
+    const response = await fetch(`${API_BASE_URL}/submissions/custom`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ problemId, code, language, customInput })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Custom submission failed');
+    return data;
+};
+
+export const getCustomSubmission = async (submissionId) => {
+    const response = await fetch(`${API_BASE_URL}/submissions/custom/${submissionId}`, {
+        headers: getAuthHeaders()
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to fetch custom submission');
     return data;
 };
 

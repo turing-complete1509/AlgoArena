@@ -25,7 +25,16 @@ export const getProblemById = async (req, res) => {
                 message: 'Problem not found'
             });
         }
-        res.json(problem);
+        
+        // Fetch the first testcase to use as a sample for the frontend console
+        const sampleTestCase = await TestCase.findOne({ problemId: problem._id }).sort('order');
+        
+        const responseData = problem.toObject();
+        if (sampleTestCase) {
+            responseData.sampleTestCase = sampleTestCase.input;
+        }
+
+        res.json(responseData);
     } catch(error) {
         console.error(error);
         res.status(500).json({
