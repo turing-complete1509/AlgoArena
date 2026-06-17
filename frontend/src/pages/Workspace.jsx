@@ -5,12 +5,18 @@ import Editor from '@monaco-editor/react';
 import './Workspace.css';
 import { fetchProblemById, submitCode, getSubmission, fetchMySubmissions } from '../services/api';
 
+const LANGUAGE_TEMPLATES = {
+    javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\n// Process input and print output\n",
+    python: "import sys\ninput_data = sys.stdin.read().split()\n# Process input and print output\n",
+    cpp: "#include <iostream>\nusing namespace std;\n\nint main() {\n    // Process input and print output\n    return 0;\n}"
+};
 
 const Workspace = () => {
     const { id } = useParams();
     const [problem, setProblem] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [code, setCode] = useState('// Write your code here...\nfunction twoSum(nums, target) {\n\n}');
+    const [language, setLanguage] = useState('javascript');
+    const [code, setCode] = useState(LANGUAGE_TEMPLATES['javascript']);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionResult, setSubmissionResult] = useState(null)
     const [activeTab, setActiveTab] = useState('description');
@@ -31,6 +37,26 @@ const Workspace = () => {
         loadProblem();
     }, [id]);
 
+    const handleLanguageChange = (e) => {
+        const newLang = e.target.value;
+        setLanguage(newLang);
+        setCode(LANGUAGE_TEMPLATES[newLang]);
+    };
+
+    const loadHistory = async () => {
+        try {   
+            const data = await fetchMySubmissions(id);
+            setHistory(data);
+        } catch(err){
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        if(activeTab==='submissions'){
+            loadHistory();
+        }
+    }, [activeTab]);
 
     if (loading) return <div className="loader">Loading Workspace...</div>;
     if (!problem) return <div className="error">Problem not found!</div>;
@@ -46,7 +72,7 @@ const Workspace = () => {
 
         try {
             // 1. Submit code to the queue
-            const { submissionId } = await submitCode(id, 'javascript', code);
+            const { submissionId } = await submitCode(id, language, code);
             
             // 2. Poll the database every 1.5 seconds until done
             const pollInterval = setInterval(async () => {
@@ -65,21 +91,6 @@ const Workspace = () => {
             setIsSubmitting(false);
         }
     };
-
-    const loadHistory = async () => {
-        try {   
-            const data = await fetchMySubmissions(id);
-            setHistory(data);
-        } catch(err){
-            console.error(err);
-        }
-    };
-
-    useEffect(() => {
-        if(activeTab==='submissions'){
-            loadHistory();
-        }
-    }, [activeTab]);
 
     
 
@@ -169,11 +180,22 @@ const Workspace = () => {
 
                 {/* RIGHT PANE: Code Editor & Console */}
                 <div className="pane editor-pane">
-                    <div className="pane-header">Code Editor (JavaScript)</div>
+                    <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Code Editor</span>
+                        <select 
+                            value={language} 
+                            onChange={handleLanguageChange}
+                            style={{ padding: '4px', borderRadius: '4px', background: '#333', color: '#fff', border: '1px solid #555' }}
+                        >
+                            <option value="javascript">JavaScript</option>
+                            <option value="python">Python</option>
+                            <option value="cpp">C++</option>
+                        </select>
+                    </div>
                     <div className="editor-wrapper">
                         <Editor
                             height="100%"
-                            defaultLanguage="javascript"
+                            language={language}
                             theme="vs-dark"
                             value={code}
                             onChange={(value) => setCode(value)}

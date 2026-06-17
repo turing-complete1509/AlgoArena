@@ -10,9 +10,7 @@ export const createSubmission = async (req, res) => {
         
         const userId = req.user._id;
 
-        if (language !== 'javascript') {
-            return res.status(400).json({ message: 'Only JavaScript is supported currently.' });
-        }
+        // We support JS, Python, and C++
 
         // 1. Create a Pending submission in the database
         const submission = await Submission.create({
