@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import Split from 'react-split';
 import Editor from '@monaco-editor/react';
 import './Workspace.css';
-import { fetchProblemById, submitCode, getSubmission } from '../services/api';
+import { fetchProblemById, submitCode, getSubmission, fetchMySubmissions } from '../services/api';
 
 
 const Workspace = () => {
@@ -13,6 +13,8 @@ const Workspace = () => {
     const [code, setCode] = useState('// Write your code here...\nfunction twoSum(nums, target) {\n\n}');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionResult, setSubmissionResult] = useState(null)
+    const [activeTab, setActiveTab] = useState('description');
+    const [history, setHistory] = useState([]);
 
     useEffect(() => {
         const loadProblem = async () => {
@@ -28,6 +30,7 @@ const Workspace = () => {
         };
         loadProblem();
     }, [id]);
+
 
     if (loading) return <div className="loader">Loading Workspace...</div>;
     if (!problem) return <div className="error">Problem not found!</div>;
@@ -63,6 +66,23 @@ const Workspace = () => {
         }
     };
 
+    const loadHistory = async () => {
+        try {   
+            const data = await fetchMySubmissions(id);
+            setHistory(data);
+        } catch(err){
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        if(activeTab==='submissions'){
+            loadHistory();
+        }
+    }, [activeTab]);
+
+    
+
 
     return (
         <div className="workspace-container">
@@ -82,22 +102,70 @@ const Workspace = () => {
                 gutterSize={8}
                 snapOffset={30}
             >
-                {/* LEFT PANE: Description */}
+                {/* LEFT PANE */}
                 <div className="pane description-pane">
-                    <div className="pane-header">Description</div>
+                    <div className="pane-header tabs">
+                        <button 
+                            className={`tab-btn ${activeTab === 'description' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('description')}
+                        >
+                            Description
+                        </button>
+                        <button 
+                            className={`tab-btn ${activeTab === 'submissions' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('submissions')}
+                        >
+                            Submissions
+                        </button>
+                    </div>
+                    
                     <div className="pane-content">
-                        <h1>{problem.title}</h1>
-                        <span className={`difficulty-badge ${problem.difficulty.toLowerCase()}`}>
-                            {problem.difficulty}
-                        </span>
-                        
-                        <div className="description-text">
-                            {problem.description.split('\n').map((line, i) => (
-                                <p key={i}>{line}</p>
-                            ))}
-                        </div>
+                        {activeTab === 'description' && (
+                            <>
+                                <h1>{problem.title}</h1>
+                                <span className={`difficulty-badge ${problem.difficulty.toLowerCase()}`}>
+                                    {problem.difficulty}
+                                </span>
+                                <div className="description-text">
+                                    {problem.description.split('\n').map((line, i) => (
+                                        <p key={i}>{line}</p>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {activeTab === 'submissions' && (
+                            <div className="submissions-history">
+                                <h3>My Submissions</h3>
+                                {history.length === 0 ? (
+                                    <p>No submissions yet.</p>
+                                ) : (
+                                    <table className="history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Time</th>
+                                                <th>Status</th>
+                                                <th>Language</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {history.map(sub => (
+                                                <tr key={sub._id}>
+                                                    <td>{new Date(sub.submittedAt).toLocaleString()}</td>
+                                                    <td className={`status-${sub.status.replace(/\s+/g, '-').toLowerCase()}`}>
+                                                        {sub.status}
+                                                    </td>
+                                                    <td>{sub.language}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
+
 
                 {/* RIGHT PANE: Code Editor & Console */}
                 <div className="pane editor-pane">

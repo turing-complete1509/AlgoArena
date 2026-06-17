@@ -59,3 +59,29 @@ export const getSubmissionById = async (req, res) => {
     }
 };
 
+//@desc         Get user's submissions history
+//@route        GET /api/submissions/history
+
+export const getMySubmissions = async (req, res) => {
+    try {
+        const query = {
+            userId: req.user._id
+        }
+
+        if(req.query.problemId){
+            query.problemId = req.query.problemId;
+        }
+
+        const submissions = await Submission.find(query)
+                .sort({submittedAt: -1})
+                .select('-code');
+            
+        res.json(submissions);
+    } catch(error){
+        console.error('Error fetching history:', error);
+        res.status(500).json({
+            message: 'Server Error'
+        });
+    }
+}
+

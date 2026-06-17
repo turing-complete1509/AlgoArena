@@ -97,3 +97,20 @@ export const getSubmission = async (submissionId) => {
     if (!response.ok) throw new Error(data.message || 'Failed to fetch submission');
     return data;
 };
+
+//GET USER SUBMISSIONS
+
+export const fetchMySubmissions = async (problemId) => {
+    const url = problemId 
+            ? `${API_BASE_URL}/submissions/history?problemId=${problemId}`
+            : `${API_BASE_URL}/submissions/history`;
+    
+    const response = await fetch(url, {
+        headers: getAuthHeaders()
+    });
+    const data = await response.json();
+    if(!response.ok){
+        throw new Error(data.message || 'Failed to fetch history');
+    }
+    return data;
+}
