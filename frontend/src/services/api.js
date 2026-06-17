@@ -114,3 +114,37 @@ export const fetchMySubmissions = async (problemId) => {
     }
     return data;
 }
+
+// --- ADMIN ENDPOINTS ---
+
+export const createProblem = async (problemData) => {
+    const response = await fetch(`${API_BASE_URL}/problems`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(problemData)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to create problem');
+    return data;
+};
+
+export const updateProblem = async (id, problemData) => {
+    const response = await fetch(`${API_BASE_URL}/problems/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(problemData)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to update problem');
+    return data;
+};
+
+export const deleteProblem = async (id) => {
+    const response = await fetch(`${API_BASE_URL}/problems/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to delete problem');
+    return data;
+};

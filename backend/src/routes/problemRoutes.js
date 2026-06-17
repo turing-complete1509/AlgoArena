@@ -1,9 +1,23 @@
 import express from 'express';
-import {getProblems, getProblemById} from '../controllers/problemController.js';
+import {
+    getProblems,
+    getProblemById,
+    createProblem,
+    updateProblem,
+    deleteProblem
+} from '../controllers/problemController.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { admin } from '../middleware/adminMiddleware.js';
 
 const router = express.Router();
 
-router.get('/', getProblems);
-router.get('/:id', getProblemById);
+router.route('/')
+    .get(getProblems)
+    .post(protect, admin, createProblem);
+
+router.route('/:id')
+    .get(getProblemById)
+    .put(protect, admin, updateProblem)
+    .delete(protect, admin, deleteProblem);
 
 export default router;

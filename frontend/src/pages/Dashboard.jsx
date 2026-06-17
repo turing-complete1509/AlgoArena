@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import {useNavigate} from 'react-router-dom';
 import { fetchProblems } from '../services/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -8,6 +9,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
 
     const navigate = useNavigate();
+    const { user, logout } = useContext(AuthContext);
 
     useEffect(() => {
         const loadProblems = async () => {
@@ -23,6 +25,11 @@ const Dashboard = () => {
         loadProblems();
     }, []);
 
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
     if (loading) {
         return (
             <div className="loader">
@@ -33,9 +40,23 @@ const Dashboard = () => {
 
     return (
         <div className="dashboard-container">
+            <nav style={{display: 'flex', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid #30363d'}}>
+                <div style={{fontWeight: 'bold', fontSize: '1.2rem', color: '#58a6ff'}}>AlgoArena</div>
+                <div style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
+                    {user && <span style={{color: '#c9d1d9'}}>Welcome, {user.username}</span>}
+                    {user?.role === 'admin' && (
+                        <button onClick={() => navigate('/admin')} style={{background: '#238636', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer'}}>
+                            Admin Panel
+                        </button>
+                    )}
+                    <button onClick={handleLogout} style={{background: '#21262d', color: '#c9d1d9', border: '1px solid #30363d', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer'}}>
+                        Logout
+                    </button>
+                </div>
+            </nav>
+
             <header className="dashboard-header">
-                <h1> AlgoArena </h1>
-                <p>Select a problem to start practicing!</p>
+                <h1> Select a problem to start practicing! </h1>
             </header>
 
             <div className='table-wrapper'>
