@@ -8,8 +8,7 @@ export const createSubmission = async (req, res) => {
     try {
         const { problemId, code, language } = req.body;
         
-        // Mock user ID since we haven't wired up auth in the frontend yet
-        const userId = '60d0fe4f5311236168a109ca';
+        const userId = req.user._id;
 
         if (language !== 'javascript') {
             return res.status(400).json({ message: 'Only JavaScript is supported currently.' });

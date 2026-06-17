@@ -60,13 +60,26 @@ export const fetchProblemById = async (id) => {
     }
 };
 
+//HELPER FUNCTION TO GET TOKEN
+
+const getAuthHeaders = () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.token) {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.token}`
+        };
+    }
+    return { 'Content-Type': 'application/json' };
+};
+
 //SUBMIT CODE
 
 export const submitCode = async (problemId, language, code) => {
     // In a real app with Auth Context, we would attach the Bearer token here
     const response = await fetch(`${API_BASE_URL}/submissions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ problemId, language, code })
     });
     const data = await response.json();
@@ -77,7 +90,9 @@ export const submitCode = async (problemId, language, code) => {
 //GET SUBMISSION STATUS
 
 export const getSubmission = async (submissionId) => {
-    const response = await fetch(`${API_BASE_URL}/submissions/${submissionId}`);
+    const response = await fetch(`${API_BASE_URL}/submissions/${submissionId}`, {
+        headers: getAuthHeaders()
+    });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Failed to fetch submission');
     return data;
