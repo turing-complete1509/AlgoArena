@@ -7,7 +7,8 @@ import { fetchProblemById, submitCode, getSubmission, fetchMySubmissions, submit
 const LANGUAGE_TEMPLATES = {
     javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\n// Process input and print output\n",
     python: "import sys\ninput_data = sys.stdin.read().split()\n# Process input and print output\n",
-    cpp: "#include <iostream>\nusing namespace std;\n\nint main() {\n    // Process input and print output\n    return 0;\n}"
+    cpp: "#include <iostream>\nusing namespace std;\n\nint main() {\n    // Process input and print output\n    return 0;\n}",
+    java: "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        // Process input and print output\n    }\n}"
 };
 
 const Workspace = () => {
@@ -259,6 +260,7 @@ const Workspace = () => {
                             <option value="javascript">JavaScript</option>
                             <option value="python">Python</option>
                             <option value="cpp">C++</option>
+                            <option value="java">Java</option>
                         </select>
                     </div>
                     

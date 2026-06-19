@@ -31,7 +31,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/algoarena')
 const connection = new IORedis('redis://127.0.0.1:6379', { maxRetriesPerRequest: null });
 
 // This function spawns Docker and runs the code using Standard I/O
-const runDockerTest = (language, filename, input) => {
+const runDockerTest = (language, filename, input, runDir) => {
     return new Promise((resolve, reject) => {
         let image, runCmd;
 
@@ -45,12 +45,16 @@ const runDockerTest = (language, filename, input) => {
             image = 'gcc:latest';
             // Compile then run
             runCmd = `g++ ${filename} -o a.out && ./a.out`;
+        } else if (language === 'java') {
+            image = 'openjdk:17-alpine';
+            // Compile then run (assumes public class Main)
+            runCmd = `javac ${filename} && java Main`;
         } else {
             return resolve({ status: 'Error', output: 'Unsupported language' });
         }
 
-        // Mount the host temp directory to /app in the container
-        const dockerCmd = `docker run -i --rm -v "${tempDir}:/app" -w /app ${image} sh -c "${runCmd}"`;
+        // Mount the host run directory to /app in the container
+        const dockerCmd = `docker run -i --rm -v "${runDir}:/app" -w /app ${image} sh -c "${runCmd}"`;
 
         const dockerProcess = exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
             if (error) {
@@ -89,17 +93,27 @@ const worker = new Worker('code-execution', async (job) => {
     if (lang === 'javascript') ext = 'js';
     else if (lang === 'python') ext = 'py';
     else if (lang === 'cpp') ext = 'cpp';
+    else if (lang === 'java') ext = 'java';
 
     const jobIdStr = crypto.randomUUID();
-    const filename = `main_${jobIdStr}.${ext}`;
-    const filePath = path.join(tempDir, filename);
+    const runDir = path.join(tempDir, jobIdStr);
+    
+    let filename = '';
+    if (lang === 'java') {
+        filename = 'Main.java';
+    } else {
+        filename = `main.${ext}`;
+    }
+    
+    const filePath = path.join(runDir, filename);
 
     try {
+        await fs.mkdir(runDir);
         await fs.writeFile(filePath, code);
 
         if (isCustom) {
             const formattedInput = customInput ? customInput.replace(/\\n/g, '\n') : '';
-            const result = await runDockerTest(lang, filename, formattedInput);
+            const result = await runDockerTest(lang, filename, formattedInput, runDir);
             
             await Model.findByIdAndUpdate(submissionId, { 
                 status: result.status === 'Success' ? 'Completed' : result.status,
@@ -116,7 +130,7 @@ const worker = new Worker('code-execution', async (job) => {
                 const formattedInput = tc.input.replace(/\\n/g, '\n');
                 const expectedOutput = tc.expectedOutput.replace(/\\n/g, '\n').trim();
 
-                const result = await runDockerTest(lang, filename, formattedInput);
+                const result = await runDockerTest(lang, filename, formattedInput, runDir);
 
                 if (result.status !== 'Success') {
                     finalStatus = result.status;
@@ -138,9 +152,9 @@ const worker = new Worker('code-execution', async (job) => {
         console.error("Worker error:", e);
         await Model.findByIdAndUpdate(submissionId, { status: 'Internal Error' });
     } finally {
-        // Clean up the temp file
+        // Clean up the temp directory
         try {
-            await fs.unlink(filePath);
+            await fs.rm(runDir, { recursive: true, force: true });
         } catch (e) {
             // ignore
         }
