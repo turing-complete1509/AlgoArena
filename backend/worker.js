@@ -28,7 +28,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/algoarena')
     .then(() => console.log('Worker connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-const connection = new IORedis('redis://127.0.0.1:6379', { maxRetriesPerRequest: null });
+const connection = new IORedis('redis://redis:6379', { maxRetriesPerRequest: null });
 
 // This function spawns Docker and runs the code using Standard I/O
 const runDockerTest = (language, filename, input, runDir) => {
