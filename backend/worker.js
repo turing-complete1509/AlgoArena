@@ -12,7 +12,6 @@ import crypto from 'crypto';
 
 dotenv.config();
 
-// No local temp directory needed anymore, code is injected directly!
 
 // Connect to MongoDB just like the main server
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/algoarena')
@@ -45,10 +44,9 @@ const runDockerTest = (language, filename, code, input) => {
         }
 
         const b64Code = Buffer.from(code).toString('base64');
-        const setupCmd = `echo $B64_CODE | base64 -d > ${filename} && ${runCmd}`;
+        const setupCmd = `echo ${b64Code} | base64 -d > ${filename} && ${runCmd}`;
 
-        // No volume mounts! The code is passed securely as an environment variable and decoded inside the isolated container.
-        const dockerCmd = `docker run -i --rm -e B64_CODE="${b64Code}" -w /app ${image} sh -c "${setupCmd}"`;
+        const dockerCmd = `docker run -i --rm -w /app ${image} sh -c "${setupCmd}"`;
 
         const dockerProcess = exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
             if (error) {
