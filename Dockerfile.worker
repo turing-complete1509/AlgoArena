@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Install Docker client so we can run Docker commands (DooD)
 RUN apk add --update docker openrc

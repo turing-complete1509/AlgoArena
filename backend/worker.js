@@ -46,7 +46,7 @@ const runDockerTest = (language, filename, input, runDir) => {
             // Compile then run
             runCmd = `g++ ${filename} -o a.out && ./a.out`;
         } else if (language === 'java') {
-            image = 'openjdk:17-alpine';
+            image = 'eclipse-temurin:17-alpine';
             // Compile then run (assumes public class Main)
             runCmd = `javac ${filename} && java Main`;
         } else {
