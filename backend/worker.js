@@ -12,16 +12,7 @@ import crypto from 'crypto';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const tempDir = path.join(__dirname, 'temp');
-
-// Ensure temp directory exists
-try {
-    await fs.access(tempDir);
-} catch {
-    await fs.mkdir(tempDir);
-}
+// No local temp directory needed anymore, code is injected directly!
 
 // Connect to MongoDB just like the main server
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/algoarena')
@@ -31,12 +22,12 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/algoarena')
 const connection = new IORedis('redis://redis:6379', { maxRetriesPerRequest: null });
 
 // This function spawns Docker and runs the code using Standard I/O
-const runDockerTest = (language, filename, input, runDir) => {
+const runDockerTest = (language, filename, code, input) => {
     return new Promise((resolve, reject) => {
         let image, runCmd;
 
         if (language === 'javascript') {
-            image = 'node:18-alpine';
+            image = 'node:20-alpine';
             runCmd = `node ${filename}`;
         } else if (language === 'python') {
             image = 'python:3.9-alpine';
@@ -53,8 +44,11 @@ const runDockerTest = (language, filename, input, runDir) => {
             return resolve({ status: 'Error', output: 'Unsupported language' });
         }
 
-        // Mount the host run directory to /app in the container
-        const dockerCmd = `docker run -i --rm -v "${runDir}:/app" -w /app ${image} sh -c "${runCmd}"`;
+        const b64Code = Buffer.from(code).toString('base64');
+        const setupCmd = `echo $B64_CODE | base64 -d > ${filename} && ${runCmd}`;
+
+        // No volume mounts! The code is passed securely as an environment variable and decoded inside the isolated container.
+        const dockerCmd = `docker run -i --rm -e B64_CODE="${b64Code}" -w /app ${image} sh -c "${setupCmd}"`;
 
         const dockerProcess = exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
             if (error) {
@@ -95,25 +89,17 @@ const worker = new Worker('code-execution', async (job) => {
     else if (lang === 'cpp') ext = 'cpp';
     else if (lang === 'java') ext = 'java';
 
-    const jobIdStr = crypto.randomUUID();
-    const runDir = path.join(tempDir, jobIdStr);
-    
     let filename = '';
     if (lang === 'java') {
         filename = 'Main.java';
     } else {
         filename = `main.${ext}`;
     }
-    
-    const filePath = path.join(runDir, filename);
 
     try {
-        await fs.mkdir(runDir);
-        await fs.writeFile(filePath, code);
-
         if (isCustom) {
             const formattedInput = customInput ? customInput.replace(/\\n/g, '\n') : '';
-            const result = await runDockerTest(lang, filename, formattedInput, runDir);
+            const result = await runDockerTest(lang, filename, code, formattedInput);
             
             await Model.findByIdAndUpdate(submissionId, { 
                 status: result.status === 'Success' ? 'Completed' : result.status,
@@ -130,7 +116,7 @@ const worker = new Worker('code-execution', async (job) => {
                 const formattedInput = tc.input.replace(/\\n/g, '\n');
                 const expectedOutput = tc.expectedOutput.replace(/\\n/g, '\n').trim();
 
-                const result = await runDockerTest(lang, filename, formattedInput, runDir);
+                const result = await runDockerTest(lang, filename, code, formattedInput);
 
                 if (result.status !== 'Success') {
                     finalStatus = result.status;
@@ -151,13 +137,6 @@ const worker = new Worker('code-execution', async (job) => {
     } catch (e) {
         console.error("Worker error:", e);
         await Model.findByIdAndUpdate(submissionId, { status: 'Internal Error' });
-    } finally {
-        // Clean up the temp directory
-        try {
-            await fs.rm(runDir, { recursive: true, force: true });
-        } catch (e) {
-            // ignore
-        }
     }
 
 }, { connection });
